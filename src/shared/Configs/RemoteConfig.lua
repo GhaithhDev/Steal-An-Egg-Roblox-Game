@@ -23,17 +23,4 @@ return {
 	UIEffects = {
 		FlashWhiteScreen = { Name = "FlashWhiteScreen", Type = "Event" },
 	},
-
-	Morph = {
-		RequestMorph = { Name = "RequestMorph", Type = "Event" },
-		RequestUnmorph = { Name = "RequestUnmorph", Type = "Event" },
-	},
-
-	Weapon = {
-		Shoot = { Name = "Shoot", Type = "Event" },
-		Reload = { Name = "Reload", Type = "Event" },
-		-- Unreliable since it's a high-frequency, purely cosmetic replication of
-		-- other players' shots - a dropped packet just skips one muzzle flash/laser.
-		ReplicateShot = { Name = "ReplicateShot", Type = "UnreliableEvent" },
-	},
 }

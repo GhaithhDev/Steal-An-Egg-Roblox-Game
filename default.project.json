@@ -6,13 +6,7 @@
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/shared",
-        "$ignoreUnknownInstances": true,
-        "Weapon": {
-          "$path": "src/shared/Weapon",
-          "ViewModels": {
-            "$className": "Folder"
-          }
-        }
+        "$ignoreUnknownInstances": true
       }
     },
 
