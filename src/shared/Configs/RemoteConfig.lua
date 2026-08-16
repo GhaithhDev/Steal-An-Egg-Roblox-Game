@@ -23,4 +23,8 @@ return {
 	UIEffects = {
 		FlashWhiteScreen = { Name = "FlashWhiteScreen", Type = "Event" },
 	},
+
+	Inventory = {
+		SwitchCategory = { Name = "SwitchCategory", Type = "Event" },
+	},
 }

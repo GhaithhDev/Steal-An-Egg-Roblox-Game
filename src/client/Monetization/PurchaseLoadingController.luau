@@ -10,7 +10,6 @@ local Net = require(ReplicatedStorage.Shared.Packages.Net)
 local SoundUtils = require(ReplicatedStorage.Shared.Packages.SoundUtils)
 local MonetizationUtils = require(ReplicatedStorage.Shared.Utils.MonetizationUtils)
 local ConfettiController = require(script.Parent.Parent.Confetti.ConfettiController)
-local NotificationsController = require(script.Parent.Parent.Notifications.NotificationsController)
 
 local LocalPlayer = Players.LocalPlayer
 
