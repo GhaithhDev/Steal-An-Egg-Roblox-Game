@@ -76,7 +76,7 @@ local function AddCarryPrompt(eggModel: Model)
     prompt.Destroying:Connect(clearPromptTrove)
 end
 
-function SpawnsEggsService.SpawnEgg(eggName: string, eggScale: number, spawnPosition: Vector3, addNest: boolean?): Model?
+function SpawnsEggsService.SpawnEgg(eggName: string, eggScale: number, spawnPosition: Vector3, addNest: boolean?, area: string?): Model?
 	--spawn egg model and position so that it's bottom is at the ground
     local template = EggModels:FindFirstChild(eggName)
     if not template or not template:IsA("Model") then
@@ -87,6 +87,7 @@ function SpawnsEggsService.SpawnEgg(eggName: string, eggScale: number, spawnPosi
     eggModel:ScaleTo(eggScale)
     eggModel:SetAttribute("EggName", eggName)
     eggModel:SetAttribute("EggScale", eggScale)
+    eggModel:SetAttribute("Area", area)
     ModelUtils.AlignModelBottom(eggModel, Vector3.new(spawnPosition.X,GroundHeight,spawnPosition.Z))
     eggModel.Parent = SpawnedEggsFolder
 

@@ -40,7 +40,7 @@ local function SpawnEggsInArea(area: BasePart)
     end
 
     local function Place(position: Vector3, eggName: string, eggScale: number, radius: number)
-        local eggModel = SpawnsEggsService.SpawnEgg(eggName, eggScale, position, true)
+        local eggModel = SpawnsEggsService.SpawnEgg(eggName, eggScale, position, true, area.Name)
         if eggModel then
             table.insert(placedEggs, { model = eggModel, position = position, radius = radius })
         end

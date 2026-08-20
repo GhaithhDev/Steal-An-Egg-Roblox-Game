@@ -69,12 +69,13 @@ local function DropEgg(rig: Model, egg: Model?)
 
 	local eggName = egg:GetAttribute("EggName") or egg.Name
 	local eggScale = egg:GetAttribute("EggScale") or 1
+	local eggArea = egg:GetAttribute("Area")
 	local dropPosition = GetGroundPosition(rig)
 
 	egg:Destroy()
 
 	local offset = rig:GetPivot().LookVector * EggsConfig.DropOffset
-	local droppedEgg = SpawnsEggsService.SpawnEgg(eggName, eggScale, dropPosition + offset, false)
+	local droppedEgg = SpawnsEggsService.SpawnEgg(eggName, eggScale, dropPosition + offset, false, eggArea)
 	if droppedEgg then
 		AreaEggsService.DroppedEggs[droppedEgg] = true
 	end
@@ -93,6 +94,13 @@ function CarryEggsService.ClaimCarriedEgg(rig: Model): Model?
 	clearCarryTrove(rig)
 
 	return egg
+end
+
+-- forces whatever the rig is currently carrying back onto the ground, exactly
+-- like an explicit player drop request - used by EggGuardsService when a
+-- guard catches its target
+function CarryEggsService.ForceDropEgg(rig: Model)
+	DropEgg(rig)
 end
 
 function CarryEggsService.CarryEgg(rig: Model, egg: Model, isNPC: boolean?)
