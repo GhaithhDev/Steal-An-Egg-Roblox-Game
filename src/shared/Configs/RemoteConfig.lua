@@ -27,4 +27,9 @@ return {
 	Inventory = {
 		SwitchCategory = { Name = "SwitchCategory", Type = "Event" },
 	},
+	
+	Eggs = {
+		CarryEgg = { Name = "CarryEgg", Type = "Event"}, -- Client to server
+		DropEgg = { Name = "DropEgg", Type = "Event" } -- Client to server
+	}
 }

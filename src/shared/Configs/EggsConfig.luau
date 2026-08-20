@@ -1,0 +1,58 @@
+local EggsConfig = {}
+
+EggsConfig.Eggs = {
+	Dragon = {
+		ScaleRange = { Min = 0.2, Max = .5 },
+        Rarity = "Common"
+	},
+    Snake = {
+        ScaleRange = { Min = .2, Max = .8 },
+        Rarity = "Rare"
+    }
+}
+
+EggsConfig.EggsInEachArea = 5
+EggsConfig.EggsPerArea = {
+	Forest = {
+		{ Name = "Dragon", Chance = 0.7 },
+		{ Name = "Snake", Chance = 0.3 },
+	},
+}
+
+-- How much bigger a nest's visible horizontal size is than the egg it holds
+EggsConfig.NEST_SCALE_MULTIPLIER = 1.25
+
+-- Gap (studs) left between two touching nests' footprints - every egg is placed
+-- touching another egg by this much, so the group always reads as one cluster
+EggsConfig.EGG_PLACEMENT_PADDING = .5
+
+-- How many times we retry a random anchor/angle before giving up and skipping the egg
+EggsConfig.EGG_PLACEMENT_MAX_ATTEMPTS = 20
+
+-- Carrying
+EggsConfig.CARRY_PROMPT_ACTION_TEXT = "Carry"
+EggsConfig.CARRY_PROMPT_HOLD_DURATION = 0.5
+EggsConfig.CARRY_PROMPT_MAX_DISTANCE = 8
+EggsConfig.CARRY_OFFSET = Vector3.new(0, 3, -3) -- carried egg's position relative to the rig's HumanoidRootPart
+EggsConfig.DropOffset = 3 -- how much studs away the egg will be from player
+
+function EggsConfig.GetRandomEgg(area: string): (string, number)
+    local pool = EggsConfig.EggsPerArea[area]
+    assert(pool, `No egg pool configured for area "{area}"`)
+
+    local roll = math.random()
+    local cumulative = 0
+    for _, entry in pool do
+        cumulative += entry.Chance
+        if roll <= cumulative then
+            local scaleRange = EggsConfig.Eggs[entry.Name].ScaleRange
+            return entry.Name, scaleRange.Min + math.random() * (scaleRange.Max - scaleRange.Min)
+        end
+    end
+
+    local fallback = pool[#pool]
+    local scaleRange = EggsConfig.Eggs[fallback.Name].ScaleRange
+    return fallback.Name, scaleRange.Min + math.random() * (scaleRange.Max - scaleRange.Min)
+end
+
+return EggsConfig

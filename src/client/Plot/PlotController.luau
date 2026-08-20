@@ -6,13 +6,7 @@ local Workspace = game:GetService("Workspace")
 
 local PlotConfig = require(ReplicatedStorage.Shared.Configs.PlotConfig)
 
-local OWNER_ATTRIBUTE = PlotConfig.OWNER_ATTRIBUTE
-local SHOW_ICON_DISTANCE = 25
-local ICON_ACTION_DEBOUNCE = 0.5
-local ICON_TWEEN_INFO = TweenInfo.new(0.4)
-local ICON_IMAGE = "rbxassetid://105504781988292"
-local ICON_SIZE = UDim2.fromOffset(80, 80)
-local ICON_HIDDEN_SIZE = UDim2.fromOffset(0, 0)
+local PenGuiTemplate = ReplicatedStorage.Shared.Assets.PenGui
 
 local localPlayer = Players.LocalPlayer
 
@@ -25,19 +19,10 @@ local isIconShown = false
 local lastIconAction = 0
 
 local function CreatePlotIcon(): BillboardGui
-	local billboard = Instance.new("BillboardGui")
+	local billboard = PenGuiTemplate:Clone()
 	billboard.Name = "PlotIcon"
-	billboard.Size = ICON_HIDDEN_SIZE
-	billboard.StudsOffsetWorldSpace = Vector3.new(0, 10, 0)
-	billboard.AlwaysOnTop = true
-	billboard.MaxDistance = 500
-
-	local icon = Instance.new("ImageLabel")
-	icon.Name = "Icon"
-	icon.Size = UDim2.fromScale(1, 1)
-	icon.BackgroundTransparency = 1
-	icon.Image = ICON_IMAGE
-	icon.Parent = billboard
+	billboard.Size = PlotConfig.ICON_HIDDEN_SIZE
+	billboard.StudsOffsetWorldSpace = PlotConfig.ICON_WORLD_OFFSET
 
 	return billboard
 end
@@ -60,7 +45,7 @@ local function ShowIcon()
 	if not plotIcon then
 		return
 	end
-	TweenService:Create(plotIcon, ICON_TWEEN_INFO, { Size = ICON_SIZE }):Play()
+	TweenService:Create(plotIcon, PlotConfig.ICON_TWEEN_INFO, { Size = PlotConfig.ICON_SIZE }):Play()
 
 	if plotBase and not plotBase:FindFirstChild("PlotHighlight") then
 		local highlight = Instance.new("Highlight")
@@ -76,7 +61,7 @@ local function HideIcon()
 	if not plotIcon then
 		return
 	end
-	TweenService:Create(plotIcon, ICON_TWEEN_INFO, { Size = ICON_HIDDEN_SIZE }):Play()
+	TweenService:Create(plotIcon, PlotConfig.ICON_TWEEN_INFO, { Size = PlotConfig.ICON_HIDDEN_SIZE }):Play()
 
 	if plotBase then
 		local highlight = plotBase:FindFirstChild("PlotHighlight")
@@ -87,7 +72,7 @@ local function HideIcon()
 end
 
 local function SetupPlot(plotFolder: Instance)
-	local isOwner = plotFolder:GetAttribute(OWNER_ATTRIBUTE) == localPlayer.UserId
+	local isOwner = plotFolder:GetAttribute(PlotConfig.OWNER_ATTRIBUTE) == localPlayer.UserId
 
 	if not isOwner then
 		if playerPlot == plotFolder then
@@ -125,12 +110,12 @@ local function Update()
 		return
 	end
 
-	if os.clock() - lastIconAction < ICON_ACTION_DEBOUNCE then
+	if os.clock() - lastIconAction < PlotConfig.ICON_ACTION_DEBOUNCE then
 		return
 	end
 
 	local distance = (rootPart.Position - plotBase:GetPivot().Position).Magnitude
-	if distance > SHOW_ICON_DISTANCE then
+	if distance > PlotConfig.SHOW_ICON_DISTANCE then
 		if isIconShown then
 			return
 		end
@@ -156,7 +141,7 @@ function PlotController.Start()
 		end
 
 		Refresh()
-		plotFolder:GetAttributeChangedSignal(OWNER_ATTRIBUTE):Connect(Refresh)
+		plotFolder:GetAttributeChangedSignal(PlotConfig.OWNER_ATTRIBUTE):Connect(Refresh)
 		-- The server clears and re-clones the base model on every (re)assignment,
 		-- not just on Owner changing, so the icon must reattach to the new instance.
 		plotFolder.ChildAdded:Connect(Refresh)
