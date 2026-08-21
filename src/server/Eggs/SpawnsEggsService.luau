@@ -143,6 +143,7 @@ function SpawnsEggsService.CreateEggTool(eggName: string, eggScale: number, eggI
     tool:SetAttribute("EggName", eggName)
     tool:SetAttribute("EggScale", eggScale)
     tool:SetAttribute("EggId", eggId)
+    tool:SetAttribute("Category","Eggs")
 
     for _, child in eggModel:GetChildren() do
         child.Parent = tool

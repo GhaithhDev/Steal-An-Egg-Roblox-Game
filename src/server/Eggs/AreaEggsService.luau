@@ -10,11 +10,18 @@ local EggsConfig = require(ReplicatedStorage.Shared.Configs.EggsConfig)
 
 --//Cache
 local AreaEggsService = {}
-AreaEggsService.EggsInNests = {} -- [areaName] = { { model = Model, position = Vector3, radius = number }, ... } -- In nests waiting for a player to take it
+-- [areaName] = { { eggModel = Model?, nestModel = Model, position = Vector3, radius = number }, ... }
+-- One permanent slot per nest - eggModel is nil while the slot is empty (egg
+-- carried away). Slots are never removed once created (see Place/RestockNest)
+-- so a slot's index into this array is a stable id an egg can carry forward
+-- as its "NestSlotIndex" attribute across carry/drop/re-spawn.
+AreaEggsService.EggsInNests = {}
 AreaEggsService.CarriedEggs = {} -- rig carrying it (player character or NPC)
 AreaEggsService.DroppedEggs = {}
 
-type PlacedEgg = { model: Model, position: Vector3, radius: number }
+type PlacedEgg = { eggModel: Model?, nestModel: Model, position: Vector3, radius: number }
+
+local AreaEndAtFolder: Folder
 
 local function SpawnEggsInArea(area: BasePart)
     local placedEggs: { PlacedEgg } = {}
@@ -42,7 +49,11 @@ local function SpawnEggsInArea(area: BasePart)
     local function Place(position: Vector3, eggName: string, eggScale: number, radius: number)
         local eggModel = SpawnsEggsService.SpawnEgg(eggName, eggScale, position, true, area.Name)
         if eggModel then
-            table.insert(placedEggs, { model = eggModel, position = position, radius = radius })
+            -- SpawnEgg(addNest = true) reparents eggModel into a nest Model
+            -- before returning - grab that as the slot's permanent nest.
+            local nestModel = eggModel.Parent :: Model
+            table.insert(placedEggs, { eggModel = eggModel, nestModel = nestModel, position = position, radius = radius })
+            eggModel:SetAttribute("NestSlotIndex", #placedEggs)
         end
     end
 
@@ -129,7 +140,7 @@ end
 local function ClearEggsInAllAreas()
     for _, placedEggs in AreaEggsService.EggsInNests do
         for _, placed in placedEggs do
-            placed.model:Destroy()
+            placed.nestModel:Destroy() -- cascades to the egg too, if occupied
         end
     end
     table.clear(AreaEggsService.EggsInNests)
@@ -144,8 +155,45 @@ local function SpawnEggsInAllAreas()
     end
 end
 
+-- Which area (by name) a ground position currently falls in, judged purely by
+-- Z against workspace.Functional.AreaEndAt's per-area boundary Parts - walks
+-- EggsConfig.AreaOrder (closest-to-spawn first) and returns the first area
+-- whose boundary the position is still short of. Independent of any egg's
+-- own "Area" attribute (that tracks origin, not current location).
+function AreaEggsService.GetAreaAtPosition(position: Vector3): string?
+    for _, areaName in EggsConfig.AreaOrder do
+        local boundary = AreaEndAtFolder:FindFirstChild(areaName)
+        if boundary and position.Z > boundary.Position.Z then
+            return areaName
+        end
+    end
+    return nil
+end
+
+-- Places a fresh egg back into the nest slot it originally came from (see
+-- the NestSlotIndex attribute threaded through CarryEggsService's carry/drop
+-- handling). No-ops if the slot can't be found - a rare edge case, not worth
+-- a fallback that could reintroduce a retrieval loop.
+function AreaEggsService.RestockNest(area: string, nestSlotIndex: number?, eggName: string, eggScale: number)
+    local slots = AreaEggsService.EggsInNests[area]
+    local slot = slots and nestSlotIndex and slots[nestSlotIndex]
+    if not (slot and slot.nestModel and slot.nestModel.Parent) then
+        return
+    end
+
+    local eggModel = SpawnsEggsService.SpawnEgg(eggName, eggScale, slot.position, false, area)
+    if not eggModel then
+        return
+    end
+
+    eggModel.Parent = slot.nestModel
+    eggModel:SetAttribute("NestSlotIndex", nestSlotIndex)
+    slot.eggModel = eggModel
+end
+
 function AreaEggsService.Start(Services)
     SpawnsEggsService = Services.SpawnsEggsService
+    AreaEndAtFolder = workspace.Functional.AreaEndAt
     SpawnEggsInAllAreas()
 end
 

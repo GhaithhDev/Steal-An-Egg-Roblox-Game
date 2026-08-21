@@ -61,6 +61,37 @@ function InventoryService.GrantEgg(player: Player, eggName: string, eggScale: nu
 	tool.Parent = backpack
 end
 
+-- Mirror of GrantEgg: pulls an egg back out of the player's profile and
+-- destroys its matching Tool - checking both the Backpack and the character
+-- (a Tool being placed is typically still equipped, i.e. parented to the
+-- character, not sitting in the Backpack). Returns the removed entry so the
+-- caller knows what was taken (e.g. to spawn its world representation
+-- elsewhere), or nil if eggId didn't match anything (already removed /
+-- stale tool - up to the caller to treat that as a no-op).
+function InventoryService.RemoveEgg(player: Player, eggId: string): { EggName: string, EggScale: number }?
+	local inventoryEggs = DataManager.Get(player, "InventoryEggs")
+	if not inventoryEggs or not inventoryEggs[eggId] then
+		return nil
+	end
+
+	local removed = inventoryEggs[eggId]
+	inventoryEggs[eggId] = nil
+
+	local containers = { player:FindFirstChildOfClass("Backpack"), player.Character }
+	for _, container in containers do
+		if not container then
+			continue
+		end
+		for _, tool in container:GetChildren() do
+			if tool:IsA("Tool") and tool:GetAttribute("EggId") == eggId then
+				tool:Destroy()
+			end
+		end
+	end
+
+	return removed
+end
+
 -- Backpack contents aren't guaranteed to survive a respawn, so every
 -- CharacterAdded re-derives the player's Tools from their saved InventoryEggs
 -- (the source of truth) instead of relying on the old Tools having stuck

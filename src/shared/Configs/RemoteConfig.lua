@@ -30,6 +30,7 @@ return {
 	
 	Eggs = {
 		CarryEgg = { Name = "CarryEgg", Type = "Event"}, -- Client to server
-		DropEgg = { Name = "DropEgg", Type = "Event" } -- Client to server
+		DropEgg = { Name = "DropEgg", Type = "Event" }, -- Client to server
+		PlaceEgg = { Name = "PlaceEgg", Type = "Event" } -- Client to server
 	}
 }

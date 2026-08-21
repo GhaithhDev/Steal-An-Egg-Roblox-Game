@@ -4,14 +4,17 @@ EggsConfig.Eggs = {
 	Dragon = {
 		ScaleRange = { Min = 0.2, Max = 0.5 },
 		Rarity = "Common",
+		GrowTime = 10,
 	},
 	Snake = {
 		ScaleRange = { Min = 0.2, Max = 0.8 },
 		Rarity = "Rare",
+		GrowTime = 15,
 	},
 	Robot = {
 		ScaleRange = { Min = 0.5, Max = 1.2 },
 		Rarity = "Rare",
+		GrowTime = 20,
 	},
 }
 
@@ -27,6 +30,10 @@ EggsConfig.EggsPerArea = {
 		{ Name = "Robot", Chance = 0.3 },
 	},
 }
+
+-- Order matters: closest-to-spawn area first. Drives AreaEggsService.GetAreaAtPosition's
+-- boundary walk (workspace.Functional.AreaEndAt) - must mirror the real world layout.
+EggsConfig.AreaOrder = { "Forest", "Lake", "Desert" }
 
 -- How much bigger a nest's visible horizontal size is than the egg it holds
 EggsConfig.NEST_SCALE_MULTIPLIER = 1.25

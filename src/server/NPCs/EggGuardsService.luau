@@ -2,28 +2,40 @@
 	EggGuardsService
 
 	Spawns one guard per Workspace.Functional.EggGuardsSpawnPositions part and
-	runs a simple 4-state behavior on top of PathfindingAgent:
+	runs a simple 5-state behavior on top of PathfindingAgent:
 
 	  Idle             -> arrived back at the spawn position; sleeping.
-	  WakingUp         -> just spotted a carrier from Idle; stands still
-	                      playing a one-shot wake-up animation before it
+	  WakingUp         -> just spotted a carrier/dropped egg from Idle; stands
+	                      still playing a one-shot wake-up animation before it
 	                      actually starts moving.
 	  Chasing          -> some player is carrying an egg tagged with this
 	                      guard's Area (anywhere on the map - no detection
 	                      range); chase the closest such carrier.
-	  ReturningToSpawn -> no matching carrier; walk back to the spawn position.
+	  RetrievingEgg    -> no carrier, but a dropped egg is currently sitting
+	                      inside this guard's own territory (judged by live
+	                      position via AreaEggsService.GetAreaAtPosition, not
+	                      the egg's origin Area attribute); walk to it and
+	                      pick it up.
+	  ReturningToSpawn -> nothing to chase or retrieve (or already carrying a
+	                      retrieved egg home); walk back to the spawn position.
 
 	Each mode has its own animation (state.animations, built per-guard at
-	spawn as "<GuardName>Sleep"/"Wakeup"/"Run"/"Walk"); setMode swaps between
-	them on every transition. A guard only passes through WakingUp coming
-	from Idle - one already moving (ReturningToSpawn) that re-spots a carrier
-	jumps straight to Chasing since it's already awake.
+	spawn as "<GuardName>Sleep"/"Wakeup"/"Run"/"Walk" - RetrievingEgg reuses
+	the Walk clip); setMode swaps between them on every transition. A guard
+	only passes through WakingUp coming from Idle - one already moving
+	(ReturningToSpawn) that re-spots a carrier or a retrievable egg jumps
+	straight to Chasing/RetrievingEgg since it's already awake.
 
 	Catching a carrier force-drops their egg (CarryEggsService.ForceDropEgg)
 	and briefly stuns/knocks them back. Once the egg is gone - dropped here,
 	or banked into inventory by ZoneTrackerService when the player escapes
 	with it - AreaEggsService.CarriedEggs[rig] goes nil on its own, so the
 	next think() naturally ends the chase; no extra state to unwind either way.
+	Any egg (voluntarily dropped or force-dropped by a catch) that lands back
+	inside the guard's own territory gets picked up on a later think() and
+	carried home - restocked into the exact nest slot it originally came from
+	via a "NestSlotIndex" attribute threaded through every carry/drop hop (see
+	AreaEggsService.RestockNest).
 
 	Movement/spawn/despawn/loop plumbing lives in PathfindingAgent (shared
 	with any future pathfinding NPC service); everything below is
@@ -143,6 +155,38 @@ local function getClosestCarrierRoot(state): BasePart?
 	return bestRoot
 end
 
+-- Closest dropped egg that's currently sitting inside this guard's own area
+-- AND originally belongs to this guard's area - both have to hold: a Lake
+-- egg dropped in the Forest fails the position check (it's not physically
+-- home), and a Forest egg that gets dropped deep in Lake territory (e.g. the
+-- Forest guard chased and caught its carrier all the way into Lake) fails
+-- the origin check (its nest isn't this guard's to restock into) - either
+-- way it's left alone for a player to pick up instead.
+local function getClosestDroppedEggInArea(state): Model?
+	local bestEgg: Model? = nil
+	local bestDist = math.huge
+
+	for egg in AreaEggsService.DroppedEggs do
+		if not egg.Parent then
+			continue
+		end
+		if egg:GetAttribute("Area") ~= state.area then
+			continue
+		end
+		if AreaEggsService.GetAreaAtPosition(egg.PrimaryPart.Position) ~= state.area then
+			continue
+		end
+
+		local dist = horizontalDistance(egg.PrimaryPart.Position, state.root.Position)
+		if dist < bestDist then
+			bestDist = dist
+			bestEgg = egg
+		end
+	end
+
+	return bestEgg
+end
+
 -- Ragdolls the player (PlatformStand - physics take over instead of the
 -- humanoid holding them upright) and knocks them away from the guard for
 -- EggGuardsConfig.STUN_DURATION, then restores their original movement.
@@ -201,6 +245,41 @@ local function catchTarget(state, target: BasePart)
 	setMode(state, "ReturningToSpawn")
 end
 
+-- Picks a dropped egg off the ground and carries it above the guard's head,
+-- exactly like a player carrying an egg (CarryEggsService.CarryEgg's
+-- existing isNPC path) - called once a RetrievingEgg guard gets close enough.
+local function pickUpEgg(state, egg: Model)
+	AreaEggsService.DroppedEggs[egg] = nil
+	CarryEggsService.CarryEgg(state.model, egg, true)
+	state.carriedEgg = egg
+	state.retrieveEgg = nil
+	setMode(state, "ReturningToSpawn")
+end
+
+-- Hands a carried-home egg back to AreaEggsService to restock the exact nest
+-- slot it originally came from - called once a carrying guard arrives home.
+-- Uses the egg's own origin Area attribute (not state.area) to look up the
+-- slot: a guard can end up retrieving an egg that started in a *different*
+-- area's nest (e.g. a Forest carrier gets caught deep in Lake territory) -
+-- NestSlotIndex is only meaningful within its origin area's slot array.
+local function deliverEggHome(state)
+	local egg = state.carriedEgg
+	state.carriedEgg = nil
+	if not egg then
+		return
+	end
+
+	local eggName = egg:GetAttribute("EggName") or egg.Name
+	local eggScale = egg:GetAttribute("EggScale") or 1
+	local eggArea = egg:GetAttribute("Area") or state.area
+	local nestSlotIndex = egg:GetAttribute("NestSlotIndex")
+
+	CarryEggsService.ClaimCarriedEgg(state.model)
+	egg:Destroy()
+
+	AreaEggsService.RestockNest(eggArea, nestSlotIndex, eggName, eggScale)
+end
+
 ------------------------------------------------------------------------
 -- THINK: pick target + decide state
 ------------------------------------------------------------------------
@@ -220,9 +299,25 @@ local function think(state)
 		return
 	end
 
+	-- A guard mid-delivery finishes the trip home before reacting to anything
+	-- else - no dropping a carried egg to go chase someone.
+	if state.carriedEgg then
+		if not state.carriedEgg.Parent then
+			state.carriedEgg = nil -- taken or destroyed out from under us
+		elseif horizontalDistance(root.Position, state.spawnPosition) <= EggGuardsConfig.ARRIVE_EPSILON then
+			deliverEggHome(state)
+			setMode(state, "Idle")
+			return
+		else
+			setMode(state, "ReturningToSpawn")
+			return
+		end
+	end
+
 	local target = getClosestCarrierRoot(state)
 	if target then
 		state.target = target
+		state.retrieveEgg = nil
 		if state.mode == "Idle" then
 			-- Only a freshly-idle guard needs the wake-up beat; one already
 			-- moving (ReturningToSpawn) or mid-wake-up-timeout is already awake.
@@ -234,12 +329,30 @@ local function think(state)
 		else
 			setMode(state, "Chasing")
 		end
-	elseif horizontalDistance(root.Position, state.spawnPosition) <= EggGuardsConfig.ARRIVE_EPSILON then
+		return
+	end
+	state.target = nil
+
+	local droppedEgg = getClosestDroppedEggInArea(state)
+	if droppedEgg then
+		state.retrieveEgg = droppedEgg
+		if state.mode == "Idle" then
+			setMode(state, "WakingUp")
+			state.wakeUntil = os.clock() + EggGuardsConfig.WAKEUP_DURATION
+			if state.humanoid then
+				state.humanoid.Jump = true
+			end
+		else
+			setMode(state, "RetrievingEgg")
+		end
+		return
+	end
+	state.retrieveEgg = nil
+
+	if horizontalDistance(root.Position, state.spawnPosition) <= EggGuardsConfig.ARRIVE_EPSILON then
 		setMode(state, "Idle")
-		state.target = nil
 	else
 		setMode(state, "ReturningToSpawn")
-		state.target = nil
 	end
 end
 
@@ -264,6 +377,20 @@ local function locomote(state)
 		end
 
 		PathfindingAgent.MoveToward(state, target.Position, { repathDistance = EggGuardsConfig.REPATH_DISTANCE })
+	elseif state.mode == "RetrievingEgg" then
+		local egg = state.retrieveEgg
+		if not (egg and egg.Parent and AreaEggsService.DroppedEggs[egg]) then
+			state.retrieveEgg = nil -- gone (picked up by a player, or vanished) - next think() re-decides
+			return
+		end
+
+		local eggPosition = egg.PrimaryPart.Position
+		if horizontalDistance(eggPosition, root.Position) <= EggGuardsConfig.RETRIEVE_DISTANCE then
+			pickUpEgg(state, egg)
+			return
+		end
+
+		PathfindingAgent.MoveToward(state, eggPosition, { repathDistance = EggGuardsConfig.REPATH_DISTANCE })
 	elseif state.mode == "ReturningToSpawn" then
 		PathfindingAgent.MoveToward(state, state.spawnPosition, { repathDistance = EggGuardsConfig.REPATH_DISTANCE })
 	else -- Idle or WakingUp: hold position (Idle's facing tween is handled in setMode, not here)
@@ -314,6 +441,8 @@ local function spawnEggGuardAt(part: BasePart)
 
 	state.mode = "Idle"
 	state.target = nil
+	state.retrieveEgg = nil
+	state.carriedEgg = nil
 	state.spawnPosition = part.Position
 	state.spawnCFrame = part.CFrame
 	state.area = area
@@ -321,21 +450,23 @@ local function spawnEggGuardAt(part: BasePart)
 		Idle = state.model.Name .. "Sleep",
 		WakingUp = state.model.Name .. "Wakeup",
 		Chasing = state.model.Name .. "Run",
+		RetrievingEgg = state.model.Name .. "Walk",
 		ReturningToSpawn = state.model.Name .. "Walk",
 	}
 	local thinkInterval = EggGuardsConfig.THINK_INTERVAL_MIN
 		+ math.random() * (EggGuardsConfig.THINK_INTERVAL_MAX - EggGuardsConfig.THINK_INTERVAL_MIN)
 
-	-- Warm up all 4 tracks once (forces them to load, and lets late joiners
+	-- Warm up all 5 tracks once (forces them to load, and lets late joiners
 	-- replay them correctly) then immediately silence them; explicitly resume
 	-- Idle to match the starting state.mode - setMode only fires Play/Stop
 	-- calls on an actual transition, so without this nothing would be
 	-- playing at all until the first state change.
-	local ANIMATION_LOOPED = { Idle = true, WakingUp = false, Chasing = true, ReturningToSpawn = true }
+	local ANIMATION_LOOPED = { Idle = true, WakingUp = false, Chasing = true, RetrievingEgg = true, ReturningToSpawn = true }
 	local ANIMATION_PRIORITY = {
 		Idle = Enum.AnimationPriority.Idle,
 		WakingUp = Enum.AnimationPriority.Action,
 		Chasing = Enum.AnimationPriority.Movement,
+		RetrievingEgg = Enum.AnimationPriority.Movement,
 		ReturningToSpawn = Enum.AnimationPriority.Movement,
 	}
 	for mode, animationName in state.animations do

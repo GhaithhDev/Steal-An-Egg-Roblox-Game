@@ -19,10 +19,14 @@ EggGuardsConfig.RETURN_FACING_TWEEN_TIME = 0.6
 -- clips run a different length.
 EggGuardsConfig.WAKEUP_DURATION = 0.5
 
+-- Retrieve: while RetrievingEgg, a guard within this distance (studs) of a
+-- dropped egg in its own area picks it up and carries it home.
+EggGuardsConfig.RETRIEVE_DISTANCE = 3
+
 -- Catch: while Chasing, a guard within this distance (studs) of its target
 -- force-drops the egg and ragdolls/knocks the player back.
 EggGuardsConfig.CATCH_DISTANCE = 4
-EggGuardsConfig.STUN_DURATION = 1.5
+EggGuardsConfig.STUN_DURATION = .5
 EggGuardsConfig.KNOCKBACK_FORCE = 145
 EggGuardsConfig.KNOCKBACK_UPWARD_FORCE = 15
 

@@ -4,6 +4,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Workspace = game:GetService("Workspace")
 
 local DataManager = require(ServerScriptService.Server.Data.Manager)
+local GrowingEggsService = require(ServerScriptService.Server.Eggs.GrowingEggsService)
 local PlotConfig = require(ReplicatedStorage.Shared.Configs.PlotConfig)
 local PlotBaseSpawner = require(script.Parent.PlotBaseSpawner)
 
@@ -100,6 +101,7 @@ function PlotAssignment.AssignPlot(player: Player)
 	end
 
 	SpawnPlotNPCs(plotFolder, player)
+	GrowingEggsService.RestoreGrowingEggs(plotFolder, player)
 end
 
 function PlotAssignment.ReleasePlot(player: Player)

@@ -70,6 +70,7 @@ local function DropEgg(rig: Model, egg: Model?)
 	local eggName = egg:GetAttribute("EggName") or egg.Name
 	local eggScale = egg:GetAttribute("EggScale") or 1
 	local eggArea = egg:GetAttribute("Area")
+	local nestSlotIndex = egg:GetAttribute("NestSlotIndex")
 	local dropPosition = GetGroundPosition(rig)
 
 	egg:Destroy()
@@ -77,6 +78,9 @@ local function DropEgg(rig: Model, egg: Model?)
 	local offset = rig:GetPivot().LookVector * EggsConfig.DropOffset
 	local droppedEgg = SpawnsEggsService.SpawnEgg(eggName, eggScale, dropPosition + offset, false, eggArea)
 	if droppedEgg then
+		if nestSlotIndex then
+			droppedEgg:SetAttribute("NestSlotIndex", nestSlotIndex)
+		end
 		AreaEggsService.DroppedEggs[droppedEgg] = true
 	end
 end
@@ -215,9 +219,9 @@ function CarryEggsService.ValidatePlayerCarryEgg(player: Player, egg: Model?)
 	end
 
 	for _, placedEggs in AreaEggsService.EggsInNests do
-		for i, placed in placedEggs do
-			if placed.model == egg then
-				table.remove(placedEggs, i)
+		for _, placed in placedEggs do
+			if placed.eggModel == egg then
+				placed.eggModel = nil -- slot stays - the nest itself isn't going anywhere
 				CarryEggsService.CarryEgg(rig, egg)
 				return
 			end

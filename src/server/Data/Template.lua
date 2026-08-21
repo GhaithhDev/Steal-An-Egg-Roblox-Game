@@ -1,6 +1,7 @@
 local Template = {
 	PlotUpgrade = 1,
-	InventoryEggs = {}
+	InventoryEggs = {},
+	GrowingEggs = {},
 }
 
 return Template
