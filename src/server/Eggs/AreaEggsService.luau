@@ -47,7 +47,7 @@ local function SpawnEggsInArea(area: BasePart)
     end
 
     local function Place(position: Vector3, eggName: string, eggScale: number, radius: number)
-        local eggModel = SpawnsEggsService.SpawnEgg(eggName, eggScale, position, true, area.Name)
+        local eggModel = SpawnsEggsService.SpawnEgg(eggName, eggScale, position, true, area.Name, EggsConfig.BABY_SCALE_FRACTION)
         if eggModel then
             -- SpawnEgg(addNest = true) reparents eggModel into a nest Model
             -- before returning - grab that as the slot's permanent nest.
@@ -60,7 +60,7 @@ local function SpawnEggsInArea(area: BasePart)
     -- Slot 1's radius is picked before spawning either seed egg, so the pair can be
     -- built symmetrically around area.Position (see slot 2 below).
     local firstName, firstScale = EggsConfig.GetRandomEgg(area.Name)
-    local firstRadius = SpawnsEggsService.GetEggFootprintRadius(firstName, firstScale)
+    local firstRadius = SpawnsEggsService.GetEggFootprintRadius(firstName, firstScale, EggsConfig.BABY_SCALE_FRACTION)
     if not firstRadius then
         return
     end
@@ -72,7 +72,7 @@ local function SpawnEggsInArea(area: BasePart)
     end
 
     local secondName, secondScale = EggsConfig.GetRandomEgg(area.Name)
-    local secondRadius = SpawnsEggsService.GetEggFootprintRadius(secondName, secondScale)
+    local secondRadius = SpawnsEggsService.GetEggFootprintRadius(secondName, secondScale, EggsConfig.BABY_SCALE_FRACTION)
     if not secondRadius then
         return
     end
@@ -108,7 +108,7 @@ local function SpawnEggsInArea(area: BasePart)
     -- different anchor/angle if that spot bumps into some other already-placed egg.
     for _ = 3, EggsConfig.EggsInEachArea do
         local eggName, eggScale = EggsConfig.GetRandomEgg(area.Name)
-        local eggRadius = SpawnsEggsService.GetEggFootprintRadius(eggName, eggScale)
+        local eggRadius = SpawnsEggsService.GetEggFootprintRadius(eggName, eggScale, EggsConfig.BABY_SCALE_FRACTION)
         if not eggRadius then
             continue
         end
@@ -181,7 +181,7 @@ function AreaEggsService.RestockNest(area: string, nestSlotIndex: number?, eggNa
         return
     end
 
-    local eggModel = SpawnsEggsService.SpawnEgg(eggName, eggScale, slot.position, false, area)
+    local eggModel = SpawnsEggsService.SpawnEgg(eggName, eggScale, slot.position, false, area, EggsConfig.BABY_SCALE_FRACTION)
     if not eggModel then
         return
     end

@@ -7,7 +7,7 @@ local DataManager = require(ServerScriptService.Server.Data.Manager)
 local PROFILE_TEMPLATE = require(ServerScriptService.Server.Data.Template)
 
 local Players = game:GetService("Players")
-local Key = RunService:IsStudio() and "Studio_Store_2" or "Test_Store_1"
+local Key = RunService:IsStudio() and "Studio_Store_6" or "Test_Store_1"
 
 local PlayerStore = ProfileStore.New(Key, PROFILE_TEMPLATE)
 

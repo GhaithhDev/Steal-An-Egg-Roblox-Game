@@ -18,4 +18,10 @@ function ModelUtils.AlignModelBottom(model: Model, targetPosition: Vector3)
 	model:PivotTo(model:GetPivot() + delta)
 end
 
+function ModelUtils.AlignModelCenter(model: Model, targetPosition: Vector3)
+	local boundingCFrame = model:GetBoundingBox()
+	local delta = targetPosition - boundingCFrame.Position
+	model:PivotTo(model:GetPivot() + delta)
+end
+
 return ModelUtils

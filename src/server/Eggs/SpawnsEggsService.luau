@@ -37,14 +37,21 @@ local function SpawnNest(eggModel: Model)
     eggModel.Parent = nest
 end
 
-function SpawnsEggsService.GetEggFootprintRadius(eggName: string, eggScale: number): number?
+-- `scaleFraction` (defaults to 1, i.e. fully grown) lets a caller ask for the
+-- footprint at whatever fraction of eggScale the egg is actually rendered
+-- at right now - GrowingEggsService wants the full-grown radius even for a
+-- still-baby growing egg (its footprint only ever gets bigger from here), but
+-- AreaEggsService's wild-nest eggs are spawned at, and stay forever at,
+-- EggsConfig.BABY_SCALE_FRACTION - using the full-grown radius there would
+-- overestimate their actual on-screen size.
+function SpawnsEggsService.GetEggFootprintRadius(eggName: string, eggScale: number, scaleFraction: number?): number?
     local template = EggModels:FindFirstChild(eggName)
     if not template or not template:IsA("Model") then
         return nil
     end
 
     local _, size = template:GetBoundingBox()
-    return (math.max(size.X, size.Z) / 2) * eggScale
+    return (math.max(size.X, size.Z) / 2) * eggScale * (scaleFraction or 1)
 end
 
 local function AddCarryPrompt(eggModel: Model)
@@ -76,7 +83,7 @@ local function AddCarryPrompt(eggModel: Model)
     prompt.Destroying:Connect(clearPromptTrove)
 end
 
-function SpawnsEggsService.SpawnEgg(eggName: string, eggScale: number, spawnPosition: Vector3, addNest: boolean?, area: string?): Model?
+function SpawnsEggsService.SpawnEgg(eggName: string, eggScale: number, spawnPosition: Vector3, addNest: boolean?, area: string?, scaleFraction: number?): Model?
 	--spawn egg model and position so that it's bottom is at the ground
     local template = EggModels:FindFirstChild(eggName)
     if not template or not template:IsA("Model") then
@@ -84,7 +91,7 @@ function SpawnsEggsService.SpawnEgg(eggName: string, eggScale: number, spawnPosi
     end
 
     local eggModel = template:Clone()
-    eggModel:ScaleTo(eggScale)
+    eggModel:ScaleTo(eggScale * (scaleFraction or 1))
     eggModel:SetAttribute("EggName", eggName)
     eggModel:SetAttribute("EggScale", eggScale)
     eggModel:SetAttribute("Area", area)
@@ -112,7 +119,7 @@ function SpawnsEggsService.CreateEggTool(eggName: string, eggScale: number, eggI
     end
 
     local eggModel = template:Clone()
-    eggModel:ScaleTo(eggScale)
+    eggModel:ScaleTo(eggScale * EggsConfig.BABY_SCALE_FRACTION)
 
     local primaryPart = eggModel.PrimaryPart
     if not primaryPart then

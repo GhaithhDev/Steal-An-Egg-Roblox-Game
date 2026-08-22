@@ -2,20 +2,20 @@ local EggsConfig = {}
 
 EggsConfig.Eggs = {
 	Dragon = {
-		ScaleRange = { Min = 0.2, Max = 0.5 },
+		ScaleRange = { Min = 1, Max = 1.5 },
 		Rarity = "Common",
 		GrowTime = 10,
 	},
 	Snake = {
-		ScaleRange = { Min = 0.2, Max = 0.8 },
+		ScaleRange = { Min = 1.2, Max = 1.7 },
 		Rarity = "Rare",
 		GrowTime = 15,
 	},
-	Robot = {
-		ScaleRange = { Min = 0.5, Max = 1.2 },
+	Stud = {
+		ScaleRange = { Min = 2, Max = 5 },
 		Rarity = "Rare",
-		GrowTime = 20,
-	},
+		GrowTime = 5
+	}
 }
 
 EggsConfig.EggsInEachArea = 5
@@ -27,7 +27,7 @@ EggsConfig.EggsPerArea = {
 		{ Name = "Snake", Chance = 0.3 },
 	},
 	Desert = {
-		{ Name = "Robot", Chance = 0.3 },
+		{ Name = "Stud", Chance = 0.3 },
 	},
 }
 
@@ -37,6 +37,12 @@ EggsConfig.AreaOrder = { "Forest", "Lake", "Desert" }
 
 -- How much bigger a nest's visible horizontal size is than the egg it holds
 EggsConfig.NEST_SCALE_MULTIPLIER = 1.25
+
+-- Fraction of picked EggScale a "not yet grown" egg visually renders at -
+-- nest, dropped, carried, backpack Tool, and freshly-placed-in-base all start
+-- here; only a placed egg growing in a base climbs from this up to 1.0 (see
+-- GrowingEggsConfig).
+EggsConfig.BABY_SCALE_FRACTION = 0.2
 
 -- Gap (studs) left between two touching nests' footprints - every egg is placed
 -- touching another egg by this much, so the group always reads as one cluster

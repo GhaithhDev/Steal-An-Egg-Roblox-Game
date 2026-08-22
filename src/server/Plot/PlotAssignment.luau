@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local Workspace = game:GetService("Workspace")
 
+local AnimalsService = require(ServerScriptService.Server.NPCs.AnimalsService)
 local DataManager = require(ServerScriptService.Server.Data.Manager)
 local GrowingEggsService = require(ServerScriptService.Server.Eggs.GrowingEggsService)
 local PlotConfig = require(ReplicatedStorage.Shared.Configs.PlotConfig)
@@ -102,6 +103,7 @@ function PlotAssignment.AssignPlot(player: Player)
 
 	SpawnPlotNPCs(plotFolder, player)
 	GrowingEggsService.RestoreGrowingEggs(plotFolder, player)
+	AnimalsService.RestoreBaseAnimals(plotFolder, player)
 end
 
 function PlotAssignment.ReleasePlot(player: Player)

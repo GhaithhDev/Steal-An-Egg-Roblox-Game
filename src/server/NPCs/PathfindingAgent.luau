@@ -159,7 +159,6 @@ function PathfindingAgent.MoveToward(state, toPos: Vector3, opts: { computeBudge
 		
 		PathfindingAgent.StopPath(state)
 		state.humanoid:MoveTo(toPos)
-		print(`MoveTo called on {state.humanoid.Parent.Name}`)
 	else
 		local targetMoved = (toPos - (state.lastPathTarget or Vector3.zero)).Magnitude
 		local npcMoved = state.lastNPCPosition and (state.root.Position - state.lastNPCPosition).Magnitude or 0

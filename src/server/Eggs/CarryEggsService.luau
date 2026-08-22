@@ -76,7 +76,7 @@ local function DropEgg(rig: Model, egg: Model?)
 	egg:Destroy()
 
 	local offset = rig:GetPivot().LookVector * EggsConfig.DropOffset
-	local droppedEgg = SpawnsEggsService.SpawnEgg(eggName, eggScale, dropPosition + offset, false, eggArea)
+	local droppedEgg = SpawnsEggsService.SpawnEgg(eggName, eggScale, dropPosition + offset, false, eggArea, EggsConfig.BABY_SCALE_FRACTION)
 	if droppedEgg then
 		if nestSlotIndex then
 			droppedEgg:SetAttribute("NestSlotIndex", nestSlotIndex)

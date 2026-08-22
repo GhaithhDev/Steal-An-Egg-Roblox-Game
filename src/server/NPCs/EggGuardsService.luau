@@ -60,7 +60,7 @@ local AnimationService = require(ServerScriptService.Server.Animation.AnimationS
 local AreaEggsService = require(ServerScriptService.Server.Eggs.AreaEggsService)
 local CarryEggsService = require(ServerScriptService.Server.Eggs.CarryEggsService)
 
-local EggGuardAssets = ReplicatedStorage.Shared.Assets.EggGuards
+local EggGuardAssets = ReplicatedStorage.Shared.Assets.Animals
 
 local EggGuardsService = {}
 

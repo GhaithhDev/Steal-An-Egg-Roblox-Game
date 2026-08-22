@@ -15,7 +15,7 @@ local function FormatCountdown(secondsLeft: number): string
 	if secondsLeft <= 0 then
 		return "Ready!"
 	end
-	return `{math.ceil(secondsLeft)}s to Hatch!`
+	return `{math.ceil(secondsLeft)}s`
 end
 
 local function TrackEgg(eggModel: Model)
@@ -25,8 +25,14 @@ local function TrackEgg(eggModel: Model)
 
 	local billboard = GrowingEggGuiTemplate:Clone()
 	billboard.Adornee = eggModel
+	billboard.Size = GrowingEggsConfig.GUI_SIZE
+	billboard.Enabled = not eggModel:GetAttribute("IsHatching")
 	billboard.Parent = eggModel
 	trackedBillboards[eggModel] = billboard
+
+	eggModel:GetAttributeChangedSignal("IsHatching"):Connect(function()
+		billboard.Enabled = not eggModel:GetAttribute("IsHatching")
+	end)
 
 	eggModel.Destroying:Connect(function()
 		trackedBillboards[eggModel] = nil
@@ -67,6 +73,7 @@ local function Update()
 		local readyTime = eggModel:GetAttribute("ReadyTime")
 		if textLabel and readyTime then
 			textLabel.Text = FormatCountdown(readyTime - now)
+			textLabel.Visible = true
 		end
 	end
 end
